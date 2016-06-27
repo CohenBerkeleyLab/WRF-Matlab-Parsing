@@ -34,18 +34,7 @@ end
 
 end
 
-% These are defined in the Rates file for r2smh (Azimeh's custom alkyl
-% nitrate mechanism)
-
-function k = ARR2(A0, B0, TEMP)
-% k = ARR2(A0, B0, temperature)
-%    A simplified Arrhenius expression; k = A0 * exp(B0 / TEMP). Note that
-%    B0 is not negated in this form.
-if nargin < 3
-    error('rate_law:not_enough_inputs','ARR2 requires three inputs: A0, B0, TEMP')
-end
-k = A0 * exp(B0 / TEMP);
-end
+% These are defined in the .def file.
 
 function k = k46(TEMP, C_M)
 % k = k46(temperature, cair)
@@ -74,9 +63,16 @@ k = kN + k0;
 end
 
 % These are defined in the WRFUserRateLaws.f90 file (in
-% WRFV3/chem/KPP/kpp/kpp-2.1/util). Since the same function defines ARR2
-% differently, these may not be the right ones, but its the only place I
-% could find them that wasn't a different mechanism.
+% WRFV3/chem/KPP/kpp/kpp-2.1/util/WRF_Conform). 
+function k = ARR2(A0, B0, TEMP)
+% k = ARR2(A0, B0, temperature)
+%    A simplified Arrhenius expression; k = A0 * exp(B0 / TEMP). 
+if nargin < 3
+    error('rate_law:not_enough_inputs','ARR2 requires three inputs: A0, B0, TEMP')
+end
+k = A0 * exp(-B0 ./ TEMP);
+end
+
 function k = TROE(k0_300K, n, kinf_300K, m, temp, cair)
 % k = TROE(k0_300K, n, kinf_300K, m, temperature, cair)
 %   Very close to the JPL definition for a 3-body reaction, i.e. k0_T =
@@ -90,8 +86,8 @@ end
 zt_help = 300 ./ temp;
 k0_T    = k0_300K   .* zt_help .^ (n) .* cair; % k_0   at current T
 kinf_T  = kinf_300K .* zt_help .^ (m);     % k_inf at current T
-k_ratio = k0_T/kinf_T;
-k   = k0_T/(1 + k_ratio)*0.6 .^ (1 ./ (1+log10(k_ratio).^2));
+k_ratio = k0_T ./ kinf_T;
+k   = k0_T ./ (1 + k_ratio) .* 0.6 .^ (1 ./ (1+log10(k_ratio).^2));
 end
 
 function k = TROEE(A, B, k0_300K,n,kinf_300K,m,temp,cair)
@@ -107,8 +103,8 @@ end
 zt_help = 300 ./ temp;
 k0_T    = k0_300K   .* zt_help .^ (n) * cair; % k_0   at current T
 kinf_T  = kinf_300K .* zt_help .^ (m);       % k_inf at current T
-k_ratio = k0_T/kinf_T;
-troe   = k0_T/(1+k_ratio)*0.6.^(1 ./ (1+log10(k_ratio).^2));
+k_ratio = k0_T ./ kinf_T;
+troe   = k0_T ./ (1+k_ratio)*0.6.^(1 ./ (1+log10(k_ratio).^2));
 
-k = A * EXP( - B / temp) * troe;
+k = A * EXP( - B ./ temp) * troe;
 end

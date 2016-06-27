@@ -83,8 +83,8 @@ end
 
 end
 
-function [chem_names, chem_coeff] = process_eqn(chem)
-chem_names = unique(chem);
+function [chem_names_out, chem_coeff_out] = process_eqn(chem)
+chem_names = chem;
 chem_coeff = ones(size(chem_names));
 for j=1:numel(chem_names)
     [s,e] = regexp(chem_names{j},'(?<!\w)\d*\.*\d*');
@@ -95,6 +95,11 @@ for j=1:numel(chem_names)
         chem_names{j}(s:e)=[];
         chem_names{j} = strtrim(chem_names{j});
     end
-    chem_coeff(j) = chem_coeff(j) * sum(strcmp(chem_names{j},chem));
+end
+chem_names_out = unique(chem_names);
+chem_coeff_out = nan(size(chem_names_out));
+for j=1:numel(chem_names_out)
+    xx = strcmp(chem_names_out{j}, chem_names);
+    chem_coeff_out(j) = sum(chem_coeff(xx));
 end
 end
