@@ -17,6 +17,10 @@ function [ products, product_coeff, reactants, reactant_coeff, rate_fxn, isphoto
 %   RATE_FXN is a function handle to the appropriate rate constant
 %   function. Non-photolytic rate constants will required the input of
 %   temperature (in K) and number density of air (in molec./cm^3).
+%
+%   The KPP is described in Damian, et al. 2002; Computers and Chemical
+%   Engineering, 26, 1567, http://www2.mmm.ucar.edu/wrf/WG2/GPU/KPP-sdarticle.pdf
+
 
 E = JLLErrors;
 
@@ -27,13 +31,10 @@ tline=tline_in(i+1:end);
 % Split into equation and rate constant
 tmp = strtrim(strsplit(tline,':'));
 rate_const_in = tmp{2};
-% First change things like M{O2} into just what's in the {} as this seems
-% to be some extra information about the third body.
-tmp{1} = regexprep(tmp{1}, '(?<=[\w ]){[=\w]*}','');
-% then products and reactants. Next remove additional curly braces which
-% seem to be used to define fixed species, but we already know that from
-% the species list.
-tmp{1} = regexprep(tmp{1},'[{}]','');
+% Anything in curly braces is a comment and so can be removed. See Damian
+% et al. section 4
+tmp{1} = regexprep(tmp{1},'{.*}','');
+% Then split into products and reactants
 tmp = strtrim(strsplit(tmp{1},'='));
 products = strtrim(strsplit(tmp{2},'+'));
 reactants = strtrim(strsplit(tmp{1},'+'));

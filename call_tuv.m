@@ -1,5 +1,5 @@
 function [ phot_rates ] = call_tuv( wrf_js, date_in, hour_in, lon_in, lat_in, utc_bool )
-% [ PHOT_RATES ] = CALL_TUV( WRF_JS, DATE_IN, HOUR_IN )
+% [ PHOT_RATES ] = CALL_TUV( WRF_JS, DATE_IN, HOUR_IN, LON_IN, LAT_IN, UTC_BOOL )
 %   Calls a compiled TUV model for the date and hour specified. DATE_IN
 %   should be a valid date number or string, HOUR_IN should be an integer.
 %   WRF_JS should be the list of photolysis rates needed.
@@ -15,8 +15,16 @@ if ~ismac
     warning('System calls to TUV model may not work on non-mac computers as written')
 end
 
-setenv('DYLD_LIBRARY_PATH', '/usr/local/bin:/opt/local/lib:')
-tuv_dir = '/Users/Josh/Documents/MATLAB/BEHR/WRF_Utils/Models/tuv5.2_source';
+if ismac
+    % This was a kludge necessary to fix some error occurring with a
+    % gfortran compiled TUV
+    setenv('DYLD_LIBRARY_PATH', '/usr/local/bin:/opt/local/lib:')
+end
+
+
+mfile_dir = fileparts(mfilename('fullpath'));
+tuv_dir = fullfile(mfile_dir, 'tuv5.2_source');
+
 
 if utc_bool
     tmzone = 0;
@@ -94,11 +102,11 @@ end
 
 function set_date_in_tuv_input(date_in, hour_in, lon_in, lat_in, tmzone, tuv_dir)
 fid = fopen(fullfile(tuv_dir,'INPUTS','usrinp-template'));
-fidnew = fopen(fullfile(tuv_dir,'INPUTS','usrinp-test'),'w');
+fidnew = fopen(fullfile(tuv_dir,'INPUTS','usrinp'),'w');
 tline = fgetl(fid);
 while ischar(tline)
     if ~isempty(strfind(tline,'tmzone'))
-        newline = sprintf('lon = %14.3f   lat = %14.3f   tmzone = %11.1f',lon_in,lat_in,tmzone);
+        newline = sprintf('lat = %14.3f   lon = %14.3f   tmzone = %11.1f',lat_in,lon_in,tmzone);
         fprintf(fidnew,'%s\n',newline);
     elseif ~isempty(strfind(tline,'iyear'))
         yr = sprintf('%12d',year(date_in));

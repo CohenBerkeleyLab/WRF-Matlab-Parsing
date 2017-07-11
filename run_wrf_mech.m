@@ -1,4 +1,4 @@
-function [ conc_out  ] = run_wrf_mech( init_cond )
+function [ conc_out, species  ] = run_wrf_mech( model_name, init_cond )
 %UNTITLED10 Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -9,21 +9,27 @@ function [ conc_out  ] = run_wrf_mech( init_cond )
 Nair = 2e19; % number density of air at surface
 T = 298;
 
+if ~exist('model_name','var')
+    model_name = 'noxbox';
+end
 if ~exist('init_cond','var')
-    init_cond = {   'NO2', 0;...
+    init_cond = {   'O3', 40e-9 * Nair;...
+                    'NO2', 0;...
                     'NO', 1e-9 * Nair;...
                     'M', Nair};
 end
 
-[ J, species, isfixed, photo_calls ] = parse_wrf_mech('r2smh-simple'); %#ok<ASGLU>
+solver = 'ode15s'; % can be rk4, simple, or ode15s
+
+[ J, species, isfixed, photo_calls ] = parse_wrf_mech(model_name); %#ok<ASGLU>
 
 lon = -84.39;
 lat = 33.775;
 date_in = '2013-06-01';
 
-nt = 10800; % number timesteps
+nt = 1800; % number timesteps
 dt = 1; % seconds
-save_freq = 60; % how frequently to save out the concentrations
+save_freq = 1; % how frequently to save out the concentrations
 start_utc_time = 19; % hr utc
 run_mode = 'normal';
 %%%%%%%%%%%%%%%%%%
@@ -44,6 +50,8 @@ tuv_hr = nan;
 %%% RUN %%%
 %%%%%%%%%%%
 
+% Make the photolysis a nested variable for persistence
+j = 0;
 switch run_mode
     case 'normal'
         % Run in regular mode
@@ -54,6 +62,7 @@ switch run_mode
         
     case 'steady-state'
         % Run in SS mode
+        E.notimplemented('%s','End condition for steady state model not implemented, would run forever');
         utc_time = start_utc_time;
         while true
             mech_timestep;
@@ -70,7 +79,18 @@ function mech_timestep
     end
     dC = zeros(size(C));
     for i=1:numel(C)
-        dC(i) = J{i}(C,j,T,Nair)*dt;
+        switch lower(solver)
+            case 'simple'
+                dC(i) = J{i}(C,j,T,Nair)*dt;
+            case 'rk4'
+                dC_dt = @(t_n, c_n) J{i}(c_n, j, T, Nair);
+                dC(i) = int_rk4(dC_dt, dt, 0, C); % change in concentration does not directly depend on time, so pass a dummy value
+            case 'ode15s'
+                dC_dt = @(t, c) ode15s_fun(J, c, j, T, Nair);
+                [tout, cout] = ode15s(dC_dt, [0 dt], C);
+                dC = cout(end,:) - cout(1,:); % necessary to be consistent with other methods.
+                break % only need to call this once to get all species.
+        end
     end
     C = C + dC;
     
@@ -82,3 +102,16 @@ end
 
 end
 
+function dcdt = ode15s_fun(J, c, j, T, Nair)
+% Sub function used to generate the derivatives in an intermediate format
+% that can then be wrapped in an anonymous function to pass to ode15s as
+% dcdt = @(t, c) ode15s_fun(J, c, j, T, Nair)
+dcdt = zeros(size(J));
+colbool = false;
+if iscolumn(c); c = c'; colbool = true; end
+for i=1:numel(J)
+    dcdt(i) = J{i}(c, j, T, Nair);
+end
+if colbool && isrow(dcdt); dcdt = dcdt'; end 
+
+end

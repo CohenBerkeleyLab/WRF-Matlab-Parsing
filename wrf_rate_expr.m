@@ -24,6 +24,8 @@ switch lower(law_name)
         fxn = @TROE;
     case 'troee'
         fxn = @TROEE;
+    case 'fall'
+        fxn = @FALL;
     otherwise
         E.badinput('%s not a valid rate expression name')
 end
@@ -107,4 +109,15 @@ k_ratio = k0_T ./ kinf_T;
 troe   = k0_T ./ (1+k_ratio)*0.6.^(1 ./ (1+log10(k_ratio).^2));
 
 k = A * EXP( - B ./ temp) * troe;
+end
+
+function k = FALL(A0, B0, C0, A1, B1, C1, CF, temp, cair)
+if nargin < 9
+    error('rate_law:not_enough_inputs','FALL requires 8 inputs: A0, B0, C0, A1, B1, C1, CF, temp, cair (number density of air in molec./cm^3)')
+end
+    k0 = A0 .* exp(-B0/temp) .* (temp ./ 300).^C0;
+    k1 = A1 .* exp(-B1/temp) .* (temp ./ 300).^C1;
+    k0 = k0 .* cair;
+    kratio = k0 ./ k1;
+    k = (k0 ./ (1 + kratio)) .* CF .^ (1 ./ (1 + log10(kratio).^2));
 end
