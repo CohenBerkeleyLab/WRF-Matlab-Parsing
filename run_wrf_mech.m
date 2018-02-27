@@ -45,7 +45,10 @@ end
 conc_out = nan(numel(C), ceil(nt/save_freq));
 
 tuv_hr = nan;
+j = [];
 
+fdir = fileparts(mfilename('fullpath'));
+addpath(fullfile(fdir,'WRF_Rate_Laws'));
 %%%%%%%%%%%
 %%% RUN %%%
 %%%%%%%%%%%

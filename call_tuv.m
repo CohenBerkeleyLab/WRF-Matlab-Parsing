@@ -6,13 +6,14 @@ function [ phot_rates ] = call_tuv( wrf_js, date_in, hour_in, lon_in, lat_in, ut
 
 E=JLLErrors;
 
+
 if ~iscell(wrf_js)
     wrf_js = strsplit(wrf_js);
 end
 
 % Set up and call the TUV model
-if ~ismac
-    warning('System calls to TUV model may not work on non-mac computers as written')
+if ~ismac && ~isunix
+    warning('System calls to TUV model may not work on non-mac and non-unix computers as written')
 end
 
 if ismac
