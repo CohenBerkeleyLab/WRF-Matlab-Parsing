@@ -27,7 +27,7 @@ switch lower(law_name)
     case 'fall'
         fxn = @FALL;
     otherwise
-        E.badinput('%s not a valid rate expression name')
+        error('wrf_rate_expr:badinput','%s not a valid rate expression name',law_name)
 end
 
 if numel(varargin) > 0
@@ -103,12 +103,12 @@ if nargin < 8
     error('rate_law:not_enough_inputs','TROEE requires 8 inputs: A, B, k0_300K, n, kinf_300K, m, temp, cair (number density of air in molec./cm^3)')
 end
 zt_help = 300 ./ temp;
-k0_T    = k0_300K   .* zt_help .^ (n) * cair; % k_0   at current T
+k0_T    = k0_300K   .* zt_help .^ (n) .* cair; % k_0   at current T
 kinf_T  = kinf_300K .* zt_help .^ (m);       % k_inf at current T
 k_ratio = k0_T ./ kinf_T;
-troe   = k0_T ./ (1+k_ratio)*0.6.^(1 ./ (1+log10(k_ratio).^2));
+troe   = k0_T ./ (1+k_ratio).*0.6.^(1 ./ (1+log10(k_ratio).^2));
 
-k = A * EXP( - B ./ temp) * troe;
+k = A .* exp( - B ./ temp) .* troe;
 end
 
 function k = FALL(A0, B0, C0, A1, B1, C1, CF, temp, cair)
