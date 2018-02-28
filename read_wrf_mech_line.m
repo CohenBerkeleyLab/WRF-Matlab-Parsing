@@ -77,6 +77,10 @@ else
     TROEE = wrf_rate_expr('TROEE');
     k46 = wrf_rate_expr('k46');
     ko1d = wrf_rate_expr('ko1d');
+    % This must be an eval statement so that if the rate constant is one of
+    % these functions, the call to that becomes part of the anonymous
+    % function. This should also handle fixed rate constants and if those
+    % rate functions are multiplied by a coefficient.
     rate_fxn = eval(sprintf('@(TEMP, C_M) %s',rate_const));
     isphoto = false;
 end
