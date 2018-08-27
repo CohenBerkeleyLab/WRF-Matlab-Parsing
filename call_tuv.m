@@ -1,15 +1,28 @@
-function [ phot_rates ] = call_tuv( wrf_js, date_in, hour_in, lon_in, lat_in, utc_bool )
+function [ phot_rates ] = call_tuv( wrf_js, date_in, hour_in, lon_in, lat_in, utc_bool, varargin )
 % [ PHOT_RATES ] = CALL_TUV( WRF_JS, DATE_IN, HOUR_IN, LON_IN, LAT_IN, UTC_BOOL )
 %   Calls a compiled TUV model for the date and hour specified. DATE_IN
 %   should be a valid date number or string, HOUR_IN should be an integer.
 %   WRF_JS should be the list of photolysis rates needed.
+%
+% [ ___ } = CALL_TUV( ___, ALT_IN ) will calculate the photolysis rates for
+% the altitude ALT_IN (in kilometers) rather than the default 0.5 km.
 
 E=JLLErrors;
 
+if ~isempty(varargin)
+    alt_in = varargin{1};
+else
+    alt_in = 0.5;
+end
 
 if ~iscell(wrf_js)
     wrf_js = strsplit(wrf_js);
 end
+
+validate_date(date_in);
+check_scalar(hour_in, 'HOUR_IN must be a scalar number');
+check_scalar(lon_in, 'LON_IN must be a scalar number');
+check_scalar(lat_in, 'LAT_IN must be a scalar number');
 
 % Set up and call the TUV model
 if ~ismac && ~isunix
@@ -33,7 +46,7 @@ else
     tmzone = round(lon_in/15);
 end
 
-set_date_in_tuv_input(date_in, hour_in, lon_in, lat_in, tmzone, tuv_dir);
+set_date_in_tuv_input(date_in, hour_in, lon_in, lat_in, alt_in, tmzone, tuv_dir);
 
 wd = cd(tuv_dir);
 status = system(fullfile(tuv_dir,'tuv'));
@@ -99,24 +112,33 @@ fclose(fid);
 [~,hh] = min(rate_table(:,1) - hour_in);
 phot_rates = rate_table(hh, eqn_numbers+2); % the +2 accounts for the first two columns being hour and SZA
 
+    function check_scalar(val, msg)
+        if ~isnumeric(val) || ~isscalar(val)
+            E.badinput(msg);
+        end
+    end
+
 end
 
-function set_date_in_tuv_input(date_in, hour_in, lon_in, lat_in, tmzone, tuv_dir)
+function set_date_in_tuv_input(date_in, hour_in, lon_in, lat_in, alt_in, tmzone, tuv_dir)
 fid = fopen(fullfile(tuv_dir,'INPUTS','usrinp-template'));
 fidnew = fopen(fullfile(tuv_dir,'INPUTS','usrinp'),'w');
 tline = fgetl(fid);
 while ischar(tline)
-    if ~isempty(strfind(tline,'tmzone'))
+    if contains(tline,'tmzone')
         newline = sprintf('lat = %14.3f   lon = %14.3f   tmzone = %11.1f',lat_in,lon_in,tmzone);
         fprintf(fidnew,'%s\n',newline);
-    elseif ~isempty(strfind(tline,'iyear'))
+    elseif contains(tline,'iyear')
         yr = sprintf('%12d',year(date_in));
         mn = sprintf('%11d',month(date_in));
         dy = sprintf('%13d',day(date_in));
         newline = sprintf('iyear = %s   imonth = %s   iday = %s',yr,mn,dy);
         fprintf(fidnew,'%s\n',newline);
-    elseif ~isempty(strfind(tline,'tstart'))
+    elseif contains(tline,'tstart')
         newline = sprintf('tstart = %1$11.3f   tstop = %1$12.3f   nt =               1\n',hour_in);
+        fprintf(fidnew, newline);
+    elseif contains(tline, 'zout')
+        newline = sprintf('zout = %13.3f   zaird =   -9.990E+02   ztemp =     -999.000\n', alt_in);
         fprintf(fidnew, newline);
     else
         fprintf(fidnew,'%s\n',tline);

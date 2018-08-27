@@ -1,11 +1,11 @@
 TUV inputs:
 ==================================================================
 inpfil =      usrinp   outfil =      usrout   nstr =             4
-lon =        -84.390   lat =         33.775   tmzone =         0.0
+lon =        -84.000   lat =         34.000   tmzone =         0.0
 iyear =         2013   imonth =           6   iday =             1
 zstart =       0.000   zstop =      120.000   nz =             121
 wstart =     120.000   wstop =      735.000   nwint =         -156
-tstart =      19.000   tstop =       19.000   nt =               1
+tstart =      12.000   tstop =       12.000   nt =               1
 lzenit =           F   alsurf =       0.100   psurf =       -999.0
 o3col =      300.000   so2col =       0.000   no2col =       0.000
 taucld =       0.000   zbase =        4.000   ztop =         5.000
