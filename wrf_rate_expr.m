@@ -59,8 +59,8 @@ function k = ko1d(TEMP, C_M)
 if nargin < 2
     error('rate_law:not_enough_inputs','ko1d requires two inputs: TEMP, C_M (number density of air in molec./cm^3)')
 end
-kN = 0.78084 .* C_M .* 1.8e-11 * exp(107 ./ TEMP);
-k0 = 0.20946 .* C_M .* 3.2e-11 * exp(67 ./ TEMP);
+kN = 0.78084 .* C_M .* 1.8e-11 .* exp(107 ./ TEMP);
+k0 = 0.20946 .* C_M .* 3.2e-11 .* exp(67 ./ TEMP);
 k = kN + k0;
 end
 
